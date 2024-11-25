@@ -17,3 +17,4 @@ class Program
         // Efter detta kan vi lägga till andra funktioner, t.ex. import av CSV-data.
     }
 }
+
