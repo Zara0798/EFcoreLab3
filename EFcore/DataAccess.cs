@@ -96,6 +96,35 @@ namespace EFcore
         {
             return (temperatur * luftfuktighet) / 100;
         }
+        // Sortera by temp luftfuktighet alla dagar:
+        public List<object> SorteraAllaDagarTemperatur(string plats)
+        {
+            return _context.TempFuktData
+                .Where(t => t.Plats == plats)
+                .GroupBy(t => t.Datum.Date)
+                .Select(g => new
+                {
+                    Datum = g.Key,
+                    MedelTemperatur = g.Average(t => t.Temp)
+                })
+                .OrderByDescending(x => x.MedelTemperatur)
+                .ToList<object>();
+        }
+
+        public List<object> SorteraAllaDagarLuftfuktighet(string plats)
+        {
+            return _context.TempFuktData
+                .Where(t => t.Plats == plats)
+                .GroupBy(t => t.Datum.Date)
+                .Select(g => new
+                {
+                    Datum = g.Key,
+                    MedelLuftfuktighet = g.Average(t => t.Luftfuktighet)
+                })
+                .OrderByDescending(x => x.MedelLuftfuktighet)
+                .ToList<object>();
+        }
+
     }
 }
 

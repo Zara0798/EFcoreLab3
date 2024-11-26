@@ -6,6 +6,7 @@ using EFCore_LAB3.Models;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Linq;
+using EFcore;
 
 class Program
 {
@@ -96,45 +97,24 @@ class Program
             Console.WriteLine($"Average Temperature: {avg.AvgTemp:F1}°C");
             Console.WriteLine($"Average Humidity: {avg.AvgHumidity:F0}%\n");
         }
+        // testa temp humidity!
+        var dataAccess = new DataAccess();
 
-        // UTOMHUS: 
+        Console.WriteLine("\nVarmaste till kallaste dagar (Utomhus):");
+        var tempSorted = dataAccess.SorteraAllaDagarTemperatur("Utomhus");
+        foreach (dynamic day in tempSorted.Take(5))
         {
-            static async Task Main(string[] args)
-            {
-                // Create database connection
-                using var context = new TempFuktContext();
-
-                // === OUTDOOR TEMPERATURE SEARCH ===
-                Console.WriteLine("=== Outdoor Temperature Search ===");
-                Console.Write("Enter date to check (yyyy-MM-dd): ");
-                var searchDate = DateTime.Parse(Console.ReadLine());
-
-                // Get outdoor average temperature for selected date
-                var outdoorTemp = await context.TempFuktData
-                    .Where(t => t.Datum.Date == searchDate && t.Plats == "Utomhus")
-                    .GroupBy(t => t.Datum.Date)
-                    .Select(g => new
-                    {
-                        AverageTemp = g.Average(x => x.Temp),
-                        ReadingsCount = g.Count()
-                    })
-                    .FirstOrDefaultAsync();
-
-                // Display results
-                Console.WriteLine($"\nOutdoor Temperature for {searchDate:yyyy-MM-dd}:");
-                if (outdoorTemp != null)
-                {
-                    Console.WriteLine($"Average Temperature: {outdoorTemp.AverageTemp:F1}°C");
-                    Console.WriteLine($"Based on {outdoorTemp.ReadingsCount} measurements");
-                }
-                else
-                {
-                    Console.WriteLine("No outdoor measurements found for this date.");
-                }
-
-                Console.WriteLine("\nPress any key to exit...");
-                Console.ReadKey();
-            }
+            Console.WriteLine($"{day.Datum:yyyy-MM-dd}: {day.MedelTemperatur:F1}°C");
         }
+
+        Console.WriteLine("\nFuktigaste till torraste dagar (Utomhus):");
+        var humiditySorted = dataAccess.SorteraAllaDagarLuftfuktighet("Utomhus");
+        foreach (dynamic day in humiditySorted.Take(5))
+        {
+            Console.WriteLine($"{day.Datum:yyyy-MM-dd}: {day.MedelLuftfuktighet:F0}%");
+        }
+
+
     }
- }
+}
+
