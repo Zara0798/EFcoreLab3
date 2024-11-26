@@ -16,6 +16,8 @@ namespace EFcore
         {
             _context = new TempFuktContext();
         }
+    }
+}
         
         // Metod för att fylla databasen från en CSV-fil
-       public void ImportCsvData(string filePath)
+
