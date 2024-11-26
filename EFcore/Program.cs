@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using EFCore_LAB3.Models;
 using System.Diagnostics.Metrics;
 using System.Globalization;
+using System.Linq;
 
 class Program
 {
@@ -75,5 +76,65 @@ class Program
         {
             Console.WriteLine(date.ToString("yyyy-MM-dd HH:mm:ss"));
         }
+
+        // Get averages for a specific date using LINQ
+        var selectedDate = DateTime.Parse("2016-10-01");
+
+        var dailyAverages = context.TempFuktData
+            .Where(t => t.Datum.Date == selectedDate)
+            .GroupBy(t => t.Plats)
+            .Select(g => new
+            {
+                Location = g.Key,
+                AvgTemp = g.Average(x => x.Temp),
+                AvgHumidity = g.Average(x => x.Luftfuktighet)
+            });
+
+        foreach (var avg in dailyAverages)
+        {
+            Console.WriteLine($"Location: {avg.Location}");
+            Console.WriteLine($"Average Temperature: {avg.AvgTemp:F1}°C");
+            Console.WriteLine($"Average Humidity: {avg.AvgHumidity:F0}%\n");
+        }
+
+        // UTOMHUS: 
+        {
+            static async Task Main(string[] args)
+            {
+                // Create database connection
+                using var context = new TempFuktContext();
+
+                // === OUTDOOR TEMPERATURE SEARCH ===
+                Console.WriteLine("=== Outdoor Temperature Search ===");
+                Console.Write("Enter date to check (yyyy-MM-dd): ");
+                var searchDate = DateTime.Parse(Console.ReadLine());
+
+                // Get outdoor average temperature for selected date
+                var outdoorTemp = await context.TempFuktData
+                    .Where(t => t.Datum.Date == searchDate && t.Plats == "Utomhus")
+                    .GroupBy(t => t.Datum.Date)
+                    .Select(g => new
+                    {
+                        AverageTemp = g.Average(x => x.Temp),
+                        ReadingsCount = g.Count()
+                    })
+                    .FirstOrDefaultAsync();
+
+                // Display results
+                Console.WriteLine($"\nOutdoor Temperature for {searchDate:yyyy-MM-dd}:");
+                if (outdoorTemp != null)
+                {
+                    Console.WriteLine($"Average Temperature: {outdoorTemp.AverageTemp:F1}°C");
+                    Console.WriteLine($"Based on {outdoorTemp.ReadingsCount} measurements");
+                }
+                else
+                {
+                    Console.WriteLine("No outdoor measurements found for this date.");
+                }
+
+                Console.WriteLine("\nPress any key to exit...");
+                Console.ReadKey();
+            }
+        }
     }
-}
+ }
