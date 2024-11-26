@@ -30,6 +30,8 @@ namespace EFCore_LAB3.Models
                 .Where(d => d.Datum.Date == date.Date && d.Plats == location)
                 .Average(d => d.Temp);
         }
+        
+
     }
 }
 
