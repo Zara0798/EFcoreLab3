@@ -15,6 +15,7 @@ namespace EFcore
         public DataAccess()
         {
             _context = new TempFuktContext();
+  
         }
     }
 }

@@ -3,45 +3,77 @@ using System.IO;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using EFCore_LAB3.Models;
+using System.Diagnostics.Metrics;
+using System.Globalization;
 
 class Program
 {
     static async Task Main(string[] args)
     {
         using var context = new TempFuktContext();
-        string csvPath = "TempFuktData.csv";  // Make sure the file is in your project's output directory
+        // First, delete the existing database to start fresh
+        await context.Database.EnsureDeletedAsync();
 
-        // Create database if it doesn't exist
+        // Then create a new database
         await context.Database.EnsureCreatedAsync();
 
-        // Import data if table is empty
-        if (!context.TempFuktData.Any())
-        {
-            var lines = File.ReadAllLines(csvPath).Skip(1);
+        string csvPath = "TempFuktData.csv";
 
-            foreach (var line in lines)
+        var lines = File.ReadAllLines(csvPath).Skip(1);
+        int counter = 0;
+
+        foreach (var line in lines)
+        {
+            var values = line.Split(',');
+            var record = new TempFuktData
             {
-                var values = line.Split(',');
-                var record = new TempFuktData
-                {
-                    Datum = DateTime.Parse(values[0]),
-                    Plats = values[1],
-                    Temp = (double)decimal.Parse(values[2].Replace(".", ",")), //ughhhh
-                    Luftfuktighet = (int)decimal.Parse(values[3].Replace(".", ","))
-                };
-                context.TempFuktData.Add(record);
-            }
-
-            await context.SaveChangesAsync();
-            Console.WriteLine($"Data imported successfully!");
-            Console.WriteLine($"Total records imported: {lines.Count()}");
-        }
-        else
-        {
-            Console.WriteLine($"Current record count: {context.TempFuktData.Count()}");
+                Datum = DateTime.ParseExact(values[0], "yyyy-MM-dd H:mm", CultureInfo.InvariantCulture),
+                Plats = values[1],
+                Temp = (double)decimal.Parse(values[2].Replace(".", ",").Replace("−", "-")),
+                Luftfuktighet = (int)decimal.Parse(values[3].Replace(".", ",").Replace("−", "-"))
+            };
+            context.TempFuktData.Add(record);
+            counter++;
         }
 
-        Console.WriteLine("Press any key to exit...");
+        await context.SaveChangesAsync();
+        Console.WriteLine($"Success! {counter} records imported.");
+
+        // Verify the data
+        var totalRecords = await context.TempFuktData.CountAsync();
+        Console.WriteLine($"\nTotal records in database: {totalRecords}");
+
+        Console.WriteLine("\nPress any key to exit...");
         Console.ReadKey();
+
+        // Add this after your data import
+        var dateRange = context.TempFuktData
+        .Select(x => x.Datum)
+        .OrderBy(d => d);
+
+        var firstDate = dateRange.First();
+        var lastDate = dateRange.Last();
+        var distinctDates = context.TempFuktData
+            .Select(x => x.Datum.Date)
+            .Distinct()
+            .Count();
+
+        Console.WriteLine($"\nDate Range in Database:");
+        Console.WriteLine($"First Date: {firstDate}");
+        Console.WriteLine($"Last Date: {lastDate}");
+        Console.WriteLine($"Number of distinct dates: {distinctDates}");
+
+        // Let's also look at some sample dates
+        var sampleDates = context.TempFuktData
+            .Select(x => x.Datum)
+            .Distinct()
+            .Take(5)
+            .ToList();
+
+        Console.WriteLine("\nSample of different dates:");
+        foreach (var date in sampleDates)
+        {
+            Console.WriteLine(date.ToString("yyyy-MM-dd HH:mm:ss"));
+        }
     }
 }
