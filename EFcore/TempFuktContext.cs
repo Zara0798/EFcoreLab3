@@ -30,12 +30,7 @@ namespace EFCore_LAB3.Models
                 .Where(d => d.Datum.Date == date.Date && d.Plats == location)
                 .Average(d => d.Temp);
         }
-        // Beräkning av mögelindex
-        //För att beräkna risk för mögel, behöver vi en formel
-        public double BeräknaMogelrisk(double temperatur, double luftfuktighet)
-        {
-            return (temperatur * luftfuktighet) / 100;
-        }
+        
 
     }
 }
