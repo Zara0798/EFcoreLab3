@@ -47,14 +47,50 @@ namespace EFcore
             _context.TempFuktData.AddRange(rows);
             _context.SaveChanges();
         }
+
+        public class TempFuktBerakningar
+        {
+            private TempFuktContext _context;
+
+            public TempFuktBerakningar(TempFuktContext context)
+            {
+                _context = context;
+            }
+
+        }
+
+        public double BeräknaMedelTempPerDag(DateTime datum, string plats)
+        {
+            var dagData = _context.TempFuktData
+                                  .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
+                                  .ToList();
+
+            return dagData.Average(t => t.Temp);
+        }
+
+        public double BeräknaMedelLuftfuktighetPerDag(DateTime datum, string plats)
+        {
+            var dagData = _context.TempFuktData
+                                  .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
+                                  .ToList();
+
+            return dagData.Average(t => t.Luftfuktighet);
+        }
+        public List<TempFuktData> SorteraVarmasteTillKallaste(DateTime datum, string plats)
+        {
+            return _context.TempFuktData
+                           .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
+                           .OrderByDescending(t => t.Temp)
+                           .ToList();
+        }
+        public List<TempFuktData> SorteraTorrasteTillFuktigaste(DateTime datum, string plats)
+        {
+            return _context.TempFuktData
+                           .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
+                           .OrderByDescending(t => t.Luftfuktighet)
+                           .ToList();
+        }
     }
 }
 
-
-
-
-
-
-
-        // Metod för att fylla databasen från en CSV-fil
 
