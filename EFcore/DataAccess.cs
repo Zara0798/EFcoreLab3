@@ -11,10 +11,10 @@ namespace EFcore
     public class DataAccess
     {
         private readonly TempFuktContext _context;
-         
-        public DataAccess()
+
+        public DataAccess(TempFuktContext context)
         {
-            _context = _context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         /*public void LoadDataFromCsv(string filePath)
