@@ -1,6 +1,7 @@
 ﻿using EFCore_LAB3.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,7 @@ namespace EFcore
     {
         private readonly TempFuktContext _context;
 
-        public DataAccess()
+        public DataAccess(TempFuktContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
@@ -32,49 +33,78 @@ namespace EFcore
             }
         }*/
 
-        // Ny metod för att sortera dagar efter minst till störst risk för mögel
-        public List<object> SorteraAllaDagarMogelrisk(string plats)
+        //Uppdaderade LäsInCvsOchSpara-metodn för att hantera felaktiga rader i CSV-filen och skriva ut felmeddelanden
+        public void LäsInCsvOchSpara(string filePath)
         {
-            return _context.TempFuktData
-                .Where(t => t.Plats == plats)
-                .GroupBy(t => t.Datum.Date) // Gruppera per dag
-                .Select(g => new
-                {
-                    Datum = g.Key,
-                    MedelTemperatur = g.Average(t => t.Temp),
-                    MedelLuftfuktighet = g.Average(t => t.Luftfuktighet),
-                    Mogelrisk = (g.Average(t => t.Temp) * g.Average(t => t.Luftfuktighet)) / 100
-                })
-                .OrderBy(x => x.Mogelrisk) // Sortera efter minst till störst risk för mögel
-                .ToList<object>();
+            try
+            {
+                var rows = File.ReadLines(filePath)
+                               .Skip(1)  // Skippa headern
+                               .Select(line => line.Split(','))
+                               .Where(columns => columns.Length == 4)  // Kontrollera att alla kolumner finns
+                               .Select(columns =>
+                               {
+                                   try
+                                   {
+                                       DateTime datum;
+                                       if (!DateTime.TryParseExact(columns[0], "yyyy-MM-dd H:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out datum))
+                                       {
+                                           throw new FormatException($"Datum kunde inte tolkas korrekt: {columns[0]}");
+                                       }
+
+                                       string plats = columns[1];
+
+                                       // Hantera eventuella annorlunda negativa tecken
+                                       string temperaturStr = columns[2].Replace('−', '-').Trim(); // Ersätt unicode minus med vanligt minus
+                                       double temp;
+                                       if (!double.TryParse(temperaturStr, NumberStyles.Any, CultureInfo.InvariantCulture, out temp))
+                                       {
+                                           throw new FormatException($"Temperatur kunde inte tolkas korrekt: {columns[2]}");
+                                       }
+
+                                       int luftfuktighet;
+                                       if (!int.TryParse(columns[3], NumberStyles.Any, CultureInfo.InvariantCulture, out luftfuktighet))
+                                       {
+                                           throw new FormatException($"Luftfuktighet kunde inte tolkas korrekt: {columns[3]}");
+                                       }
+
+                                       return new TempFuktData
+                                       {
+                                           Datum = datum,
+                                           Plats = plats,
+                                           Temp = temp,
+                                           Luftfuktighet = luftfuktighet
+                                       };
+                                   }
+                                   catch (FormatException ex)
+                                   {
+                                       Console.WriteLine($"Felaktigt format på rad: {string.Join(',', columns)}. Fel: {ex.Message}");
+                                       return null;  // Om rad har felaktigt format, returnera null
+                                   }
+                               })
+                               .Where(data => data != null)  // Ignorera ogiltiga rader
+                               .ToList();
+
+                _context.TempFuktData.AddRange(rows);
+                _context.SaveChanges();
+
+                Console.WriteLine("Data från CSV har lästs in och sparats.");
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.WriteLine($"CSV-fil kunde inte hittas: {ex.Message}");
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"Ett fel inträffade vid läsning av CSV-filen: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ett oväntat fel inträffade: {ex.Message}");
+            }
         }
 
-// Användningsexempel i Program.cs
-// Console.WriteLine("\nSortering av dagar från minst till störst risk för mögel (Utomhus):");
-// var moldSorted = dataAccess.SorteraAllaDagarMogelrisk("Utomhus");
-// foreach (dynamic day in moldSorted.Take(5))
-// {
-//     Console.WriteLine($"{day.Datum:yyyy-MM-dd}: Mogelrisk: {day.Mogelrisk:F2}");
-// }
 
-
-public void LäsInCsvOchSpara(string filePath)
-  {
-            var rows = File.ReadLines(filePath)
-                           .Skip(1)  // Skippa headern
-                           .Select(line => line.Split(','))
-                           .Where(columns => columns.Length == 4)
-                           .Select(columns => new TempFuktData
-                           {
-                               Datum = DateTime.Parse(columns[0]),
-                               Plats = columns[1],
-                               Temp = double.Parse(columns[2]),
-                               Luftfuktighet = int.Parse(columns[3])
-                           }).ToList();
-
-            _context.TempFuktData.AddRange(rows);
-            _context.SaveChanges();
-        }
 
         public class TempFuktBerakningar
         {
@@ -87,75 +117,5 @@ public void LäsInCsvOchSpara(string filePath)
 
         }
 
-        public double BeräknaMedelTempPerDag(DateTime datum, string plats)
-        {
-            var dagData = _context.TempFuktData
-                                  .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
-                                  .ToList();
-
-            return dagData.Average(t => t.Temp);
-        }
-
-        public double BeräknaMedelLuftfuktighetPerDag(DateTime datum, string plats)
-        {
-            var dagData = _context.TempFuktData
-                                  .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
-                                  .ToList();
-
-            return dagData.Average(t => t.Luftfuktighet);
-        }
-        public List<TempFuktData> SorteraVarmasteTillKallaste(DateTime datum, string plats)
-        {
-            return _context.TempFuktData
-                           .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
-                           .OrderByDescending(t => t.Temp)
-                           .ToList();
-        }
-        public List<TempFuktData> SorteraTorrasteTillFuktigaste(DateTime datum, string plats)
-        {
-            return _context.TempFuktData
-                           .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
-                           .OrderByDescending(t => t.Luftfuktighet)
-                           .ToList();
-        }
-        // Beräkning av mögelindex
-        //För att beräkna risk för mögel, behöver vi en formel
-        public double BeräknaMogelrisk(double temperatur, double luftfuktighet)
-        {
-            return (temperatur * luftfuktighet) / 100;
-        }
-
-
-        public class TempFuktBerakningar
-        {
-            return _context.TempFuktData
-                .Where(t => t.Plats == plats)
-                .GroupBy(t => t.Datum.Date)
-                .Select(g => new
-                {
-                    Datum = g.Key,
-                    MedelTemperatur = g.Average(t => t.Temp)
-                })
-                .OrderByDescending(x => x.MedelTemperatur)
-                .ToList<object>();
-        }
-
-        public List<object> SorteraAllaDagarLuftfuktighet(string plats)
-        {
-            return _context.TempFuktData
-                .Where(t => t.Plats == plats)
-                .GroupBy(t => t.Datum.Date)
-                .Select(g => new
-                {
-                    Datum = g.Key,
-                    MedelLuftfuktighet = g.Average(t => t.Luftfuktighet)
-                })
-                .OrderByDescending(x => x.MedelLuftfuktighet)
-                .ToList<object>();
-        }
     }
-
 }
-
-
-

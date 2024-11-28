@@ -23,19 +23,9 @@ class Program
         Console.WriteLine("Läser in CSV-data...");
         dataAccess.LäsInCsvOchSpara("TempFuktData.csv");
 
-        bool running = true; // Loop för att köra programmet
 
-        while (running)
-        {
-            Console.WriteLine("\n--- Meny ---");
-            Console.WriteLine("1. Ange ett datum och visa medeltemperatur för utomhus och inomhus");
-            Console.WriteLine("2. Sortera dagar från minst till störst risk för mögel (Utomhus)");
-            Console.WriteLine("3. Sortera dagar från minst till störst risk för mögel (Inomhus)");
-            Console.WriteLine("4. Testa mögelriskberäkning för givna värden (Temperatur = 20°C, Luftfuktighet = 80%)");
-            Console.WriteLine("5. ");
-
-            // Fråga användaren efter ett datum för att visa medeltemperatur och luftfuktighet
-            Console.WriteLine("Ange ett datum (yyyy-MM-dd) för att visa medeltemperatur och luftfuktighet:");
+        // Fråga användaren efter ett datum för att visa medeltemperatur och luftfuktighet
+        Console.WriteLine("Ange ett datum (yyyy-MM-dd) för att visa medeltemperatur och luftfuktighet:");
         string inputDatum = Console.ReadLine();
         DateTime datum;
 
@@ -76,7 +66,7 @@ class Program
         // Manuella tester
         Console.WriteLine("\n--- Manuella Tester ---\n");
 
-        //// Test: Beräkna medeltemperatur för en specifik månad (Januari 2021, Utomhus)
+        //// Test: Beräkna medeltemperatur för en specifik månad (Januari 2021, Utomhus) -- Behövs det ens? extra testdata typ meningslöst
         //var avgTempJan2021 = tempFuktService.BeraknaMedelTempForManad(2021, 1, "Ute");
         //Console.WriteLine("Test - Beräkna medeltemperatur för Januari 2021 (Utomhus):");
         //Console.WriteLine($"Förväntat värde: (kontrollera manuellt beroende på data), Beräknat värde: {avgTempJan2021:F2}°C\n");
@@ -103,4 +93,3 @@ class Program
 
     }
 }
-
