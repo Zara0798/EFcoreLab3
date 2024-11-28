@@ -111,12 +111,5 @@ namespace EFcore.Core
             return SorteraMogelrisk("Inne");
         }
 
-        public class MogelriskResult
-        {
-            public DateTime Datum { get; set; }
-            public double MedelTemperatur { get; set; }
-            public double MedelLuftfuktighet { get; set; }
-            public double Mogelrisk { get; set; }
-        }
     }
 }
