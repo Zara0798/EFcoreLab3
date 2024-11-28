@@ -114,7 +114,6 @@ class Program
             Console.WriteLine($"{day.Datum:yyyy-MM-dd}: {day.MedelLuftfuktighet:F0}%");
         }
 
-        // Användningsexempel i Program.cs för mögelindex inom- och utomhus
         Console.WriteLine("\nSortering av dagar från minst till störst risk för mögel (Utomhus):");
         var moldSorted = dataAccess.SorteraAllaDagarMogelriskUtomhus();
         foreach (dynamic day in moldSorted.Take(5))
