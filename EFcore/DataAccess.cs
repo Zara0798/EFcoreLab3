@@ -11,7 +11,7 @@ namespace EFcore
     public class DataAccess
     {
         private readonly TempFuktContext _context;
-
+        // Konstruktor som initialiserar databaskontexten
         public DataAccess()
         {
             _context = _context;
@@ -48,24 +48,25 @@ namespace EFcore
                 .ToList<object>();
         }
 
-// Användningsexempel i Program.cs
-// Console.WriteLine("\nSortering av dagar från minst till störst risk för mögel (Utomhus):");
-// var moldSorted = dataAccess.SorteraAllaDagarMogelrisk("Utomhus");
-// foreach (dynamic day in moldSorted.Take(5))
-// {
-//     Console.WriteLine($"{day.Datum:yyyy-MM-dd}: Mogelrisk: {day.Mogelrisk:F2}");
-// }
+        // Användningsexempel i Program.cs
+        // Console.WriteLine("\nSortering av dagar från minst till störst risk för mögel (Utomhus):");
+        // var moldSorted = dataAccess.SorteraAllaDagarMogelrisk("Utomhus");
+        // foreach (dynamic day in moldSorted.Take(5))
+        // {
+        //     Console.WriteLine($"{day.Datum:yyyy-MM-dd}: Mogelrisk: {day.Mogelrisk:F2}");
+        // }
 
 
-public void LäsInCsvOchSpara(string filePath)
+        // Metod för att läsa in data från en CSV-fil och spara till databasen
+        public void LäsInCsvOchSpara(string filePath)
   {
             var rows = File.ReadLines(filePath)
                            .Skip(1)  // Skippa headern
-                           .Select(line => line.Split(','))
-                           .Where(columns => columns.Length == 4)
+                           .Select(line => line.Split(',')) // Dela varje rad i kolumner
+                           .Where(columns => columns.Length == 4) // Kontrollera att raden har rätt antal kolumner
                            .Select(columns => new TempFuktData
                            {
-                               Datum = DateTime.Parse(columns[0]),
+                               Datum = DateTime.Parse(columns[0]), // Konvertera första kolumnen till datum
                                Plats = columns[1],
                                Temp = double.Parse(columns[2]),
                                Luftfuktighet = int.Parse(columns[3])
@@ -74,7 +75,7 @@ public void LäsInCsvOchSpara(string filePath)
             _context.TempFuktData.AddRange(rows);
             _context.SaveChanges();
         }
-
+        
         public class TempFuktBerakningar
         {
             private TempFuktContext _context;
@@ -85,7 +86,7 @@ public void LäsInCsvOchSpara(string filePath)
             }
 
         }
-
+        // Metod för att beräkna medeltemperaturen för en specifik dag och plats
         public double BeräknaMedelTempPerDag(DateTime datum, string plats)
         {
             var dagData = _context.TempFuktData
@@ -94,7 +95,7 @@ public void LäsInCsvOchSpara(string filePath)
 
             return dagData.Average(t => t.Temp);
         }
-
+        // Metod för att beräkna medelluftfuktigheten för en specifik dag och plats
         public double BeräknaMedelLuftfuktighetPerDag(DateTime datum, string plats)
         {
             var dagData = _context.TempFuktData
@@ -103,6 +104,7 @@ public void LäsInCsvOchSpara(string filePath)
 
             return dagData.Average(t => t.Luftfuktighet);
         }
+        // Metod för att sortera temperaturer från varmast till kallast för en specifik dag och plats
         public List<TempFuktData> SorteraVarmasteTillKallaste(DateTime datum, string plats)
         {
             return _context.TempFuktData
@@ -110,6 +112,7 @@ public void LäsInCsvOchSpara(string filePath)
                            .OrderByDescending(t => t.Temp)
                            .ToList();
         }
+        // Metod för att sortera luftfuktighet från torrast till fuktigast för en specifik dag och plats
         public List<TempFuktData> SorteraTorrasteTillFuktigaste(DateTime datum, string plats)
         {
             return _context.TempFuktData
@@ -137,7 +140,7 @@ public void LäsInCsvOchSpara(string filePath)
                 .OrderByDescending(x => x.MedelTemperatur)
                 .ToList<object>();
         }
-
+        // Metod för att sortera alla dagar efter luftfuktighet
         public List<object> SorteraAllaDagarLuftfuktighet(string plats)
         {
             return _context.TempFuktData
@@ -151,8 +154,25 @@ public void LäsInCsvOchSpara(string filePath)
                 .OrderByDescending(x => x.MedelLuftfuktighet)
                 .ToList<object>();
         }
-
+        // Ny metod för att sortera dagar efter mögelrisk, från högst till lägst
+        public List<object> SorteraAllaDagarMogelriskDescending(string plats)
+        {
+            return _context.TempFuktData
+                .Where(t => t.Plats == plats) // Filtrera för en specifik plats
+                .GroupBy(t => t.Datum.Date) // Gruppera per dag
+                .Select(g => new
+                {
+                    Datum = g.Key, // Dagens datum
+                    MedelTemperatur = g.Average(t => t.Temp), // Beräkna medeltemperatur
+                    MedelLuftfuktighet = g.Average(t => t.Luftfuktighet), // Beräkna medelluftfuktighet
+                    Mogelrisk = (g.Average(t => t.Temp) * g.Average(t => t.Luftfuktighet)) / 100 // Beräkna mögelrisk
+                })
+                .OrderByDescending(x => x.Mogelrisk) // Sortera efter högsta mögelrisk
+                .ToList<object>();
+        }
     }
+
 }
+
 
 
