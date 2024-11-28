@@ -32,23 +32,55 @@ namespace EFcore
             }
         }*/
 
+        //Uppdaderade LäsInCvsOchSpara-metodn för att hantera felaktiga rader i CSV-filen och skriva ut felmeddelanden
         public void LäsInCsvOchSpara(string filePath)
-  {
-            var rows = File.ReadLines(filePath)
-                           .Skip(1)  // Skippa headern
-                           .Select(line => line.Split(','))
-                           .Where(columns => columns.Length == 4)
-                           .Select(columns => new TempFuktData
-                           {
-                               Datum = DateTime.Parse(columns[0]),
-                               Plats = columns[1],
-                               Temp = double.Parse(columns[2]),
-                               Luftfuktighet = int.Parse(columns[3])
-                           }).ToList();
+        {
+            try
+            {
+                var rows = File.ReadLines(filePath)
+                               .Skip(1)  // Skippa headern
+                               .Select(line => line.Split(','))
+                               .Where(columns => columns.Length == 4)  // Kontrollera att alla kolumner finns
+                               .Select(columns =>
+                               {
+                                   try
+                                   {
+                                       return new TempFuktData
+                                       {
+                                           Datum = DateTime.Parse(columns[0]),
+                                           Plats = columns[1],
+                                           Temp = double.Parse(columns[2]),
+                                           Luftfuktighet = int.Parse(columns[3])
+                                       };
+                                   }
+                                   catch (FormatException ex)
+                                   {
+                                       Console.WriteLine($"Felaktigt format på rad: {string.Join(',', columns)}. Fel: {ex.Message}");
+                                       return null;  // Om rad har felaktigt format, returnera null
+                                   }
+                               })
+                               .Where(data => data != null)  // Ignorera ogiltiga rader
+                               .ToList();
 
-            _context.TempFuktData.AddRange(rows);
-            _context.SaveChanges();
+                _context.TempFuktData.AddRange(rows);
+                _context.SaveChanges();
+
+                Console.WriteLine("Data från CSV har lästs in och sparats.");
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.WriteLine($"CSV-fil kunde inte hittas: {ex.Message}");
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"Ett fel inträffade vid läsning av CSV-filen: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ett oväntat fel inträffade: {ex.Message}");
+            }
         }
+
 
         public class TempFuktBerakningar
         {

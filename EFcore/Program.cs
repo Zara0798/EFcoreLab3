@@ -128,6 +128,22 @@ foreach (var day in moldSortedInomhus.Take(5))
     Console.WriteLine($"{day.Datum:yyyy-MM-dd}: Mogelrisk: {day.Mogelrisk:F2}");
 }
 
+        //Datumvalidering i program.cs!
+
+        Console.WriteLine("Ange ett datum (yyyy-MM-dd) för att visa medeltemperatur och luftfuktighet:");
+        string inputDatum = Console.ReadLine();
+        DateTime datum;
+
+        while (!DateTime.TryParseExact(inputDatum, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out datum))
+        {
+            Console.WriteLine("Felaktigt format. Vänligen ange datum i formatet yyyy-MM-dd:");
+            inputDatum = Console.ReadLine();
+        }
+
+        // Använd det validerade datumet i dina beräkningar
+        var validatedDailyAverages = dataAccess.BeräknaMedelTempPerDag(datum, "Utomhus");
+        Console.WriteLine($"Medeltemperaturen för {datum:yyyy-MM-dd} är {validatedDailyAverages:F2}°C");
+
 
     }
 }
