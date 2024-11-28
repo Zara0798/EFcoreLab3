@@ -17,14 +17,31 @@ namespace EFcore.Core
             _context = context;
         }
 
-        public double BeräknaMedelTempPerDag(DateTime datum, string plats)
+        //public double BeräknaMedelTempPerDag(DateTime datum, string plats)
+        //{
+        //    var dagData = _context.TempFuktData
+        //                          .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
+        //                          .ToList();
+
+
+        //    return dagData.Average(t => t.Temp);
+        //}
+
+        public double? BeräknaMedelTempPerDag(DateTime datum, string plats) // ny 
         {
             var dagData = _context.TempFuktData
                                   .Where(t => t.Datum.Date == datum.Date && t.Plats == plats)
                                   .ToList();
 
+            if (!dagData.Any())
+            {
+                Console.WriteLine($"Ingen data hittades för datum: {datum:yyyy-MM-dd} och plats: {plats}");
+                return null; // Returnera null om ingen data hittades
+            }
+
             return dagData.Average(t => t.Temp);
         }
+
 
         public double BeräknaMedelLuftfuktighetPerDag(DateTime datum, string plats)
         {
