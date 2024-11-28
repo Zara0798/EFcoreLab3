@@ -16,6 +16,7 @@ namespace EFcore
         {
             _context = _context;
         }
+
         /*public void LoadDataFromCsv(string filePath)
         {
             var lines = File.ReadAllLines(filePath);
@@ -30,58 +31,6 @@ namespace EFcore
 
             }
         }*/
-
-    
-        // Ny metod för att sortera dagar efter minst till störst risk för mögel för utomhus
-        public List<object> SorteraAllaDagarMogelriskUtomhus()
-        {
-            return _context.TempFuktData
-                .Where(t => t.Plats == "Ute")
-                .GroupBy(t => t.Datum.Date) // Gruppera per dag
-                .Select(g => new
-                {
-                    Datum = g.Key,
-                    MedelTemperatur = g.Average(t => t.Temp),
-                    MedelLuftfuktighet = g.Average(t => t.Luftfuktighet),
-                    Mogelrisk = (g.Average(t => t.Temp) * g.Average(t => t.Luftfuktighet)) / 100
-                })
-                .OrderBy(x => x.Mogelrisk) // Sortera efter minst till störst risk för mögel
-                .ToList<object>();
-        }
-
-        // Ny metod för att sortera dagar efter minst till störst risk för mögel för inomhus
-        public List<object> SorteraAllaDagarMogelriskInomhus()
-        {
-            return _context.TempFuktData
-                .Where(t => t.Plats == "Inne")
-                .GroupBy(t => t.Datum.Date) // Gruppera per dag
-                .Select(g => new
-                {
-                    Datum = g.Key,
-                    MedelTemperatur = g.Average(t => t.Temp),
-                    MedelLuftfuktighet = g.Average(t => t.Luftfuktighet),
-                    Mogelrisk = (g.Average(t => t.Temp) * g.Average(t => t.Luftfuktighet)) / 100
-                })
-                .OrderBy(x => x.Mogelrisk) // Sortera efter minst till störst risk för mögel
-                .ToList<object>();
-        }
-
-        // Användningsexempel i Program.cs
-        // Console.WriteLine("\nSortering av dagar från minst till störst risk för mögel (Utomhus):");
-        // var moldSorted = dataAccess.SorteraAllaDagarMogelrisk("Utomhus");
-        // foreach (dynamic day in moldSorted.Take(5))
-        // {
-        //     Console.WriteLine($"{day.Datum:yyyy-MM-dd}: Mogelrisk: {day.Mogelrisk:F2}");
-        // }
-
-        // Console.WriteLine("\nSortering av dagar från minst till störst risk för mögel (Inomhus):");
-        // var moldSortedInomhus = dataAccess.SorteraAllaDagarMogelriskInomhus();
-        // foreach (dynamic day in moldSortedInomhus.Take(5))
-        // {
-        //     Console.WriteLine($"{day.Datum:yyyy-MM-dd}: Mogelrisk: {day.Mogelrisk:F2}");
-        // }
-
-
 
         public void LäsInCsvOchSpara(string filePath)
   {
@@ -177,6 +126,58 @@ namespace EFcore
                 .OrderByDescending(x => x.MedelLuftfuktighet)
                 .ToList<object>();
         }
+
+        // DTO-klass för att returnera resultatet av mögelriskberäkningar, mer strukturerad data
+        public class MogelriskResult
+        {
+            public DateTime Datum { get; set; }
+            public double MedelTemperatur { get; set; }
+            public double MedelLuftfuktighet { get; set; }
+            public double Mogelrisk { get; set; }
+        }
+
+        // Slå ihop metoderna för att sortera dagar efter mögelrisk i en metod, mer strukturerad data
+        private List<MogelriskResult> SorteraMogelrisk(string plats)
+        {
+            return _context.TempFuktData
+                .Where(t => t.Plats == plats)
+                .GroupBy(t => t.Datum.Date) // Gruppera per dag
+                .Select(g => new MogelriskResult
+                {
+                    Datum = g.Key,
+                    MedelTemperatur = g.Average(t => t.Temp),
+                    MedelLuftfuktighet = g.Average(t => t.Luftfuktighet),
+                    Mogelrisk = (g.Average(t => t.Temp) * g.Average(t => t.Luftfuktighet)) / 100
+                })
+                .OrderBy(x => x.Mogelrisk) // Sortera efter minst till störst risk för mögel
+                .ToList();
+        }
+        // Ny metod för att sortera dagar efter minst till störst risk för mögel för utomhus
+        public List<MogelriskResult> SorteraAllaDagarMogelriskUtomhus()
+        {
+            return SorteraMogelrisk("Ute");
+        }
+
+        // Ny metod för att sortera dagar efter minst till störst risk för mögel för inomhus
+        public List<MogelriskResult> SorteraAllaDagarMogelriskInomhus()
+        {
+            return SorteraMogelrisk("Inne");
+        }
+
+        // Användningsexempel i Program.cs
+        // Console.WriteLine("\nSortering av dagar från minst till störst risk för mögel (Utomhus):");
+        // var moldSorted = dataAccess.SorteraAllaDagarMogelrisk("Utomhus");
+        // foreach (dynamic day in moldSorted.Take(5))
+        // {
+        //     Console.WriteLine($"{day.Datum:yyyy-MM-dd}: Mogelrisk: {day.Mogelrisk:F2}");
+        // }
+
+        // Console.WriteLine("\nSortering av dagar från minst till störst risk för mögel (Inomhus):");
+        // var moldSortedInomhus = dataAccess.SorteraAllaDagarMogelriskInomhus();
+        // foreach (dynamic day in moldSortedInomhus.Take(5))
+        // {
+        //     Console.WriteLine($"{day.Datum:yyyy-MM-dd}: Mogelrisk: {day.Mogelrisk:F2}");
+        // }
 
     }
 }
