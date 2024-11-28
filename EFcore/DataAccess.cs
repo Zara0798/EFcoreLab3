@@ -30,8 +30,35 @@ namespace EFcore
 
             }
         }*/
-        public void LäsInCsvOchSpara(string filePath)
+
+        // Ny metod för att sortera dagar efter minst till störst risk för mögel
+        public List<object> SorteraAllaDagarMogelrisk(string plats)
         {
+            return _context.TempFuktData
+                .Where(t => t.Plats == plats)
+                .GroupBy(t => t.Datum.Date) // Gruppera per dag
+                .Select(g => new
+                {
+                    Datum = g.Key,
+                    MedelTemperatur = g.Average(t => t.Temp),
+                    MedelLuftfuktighet = g.Average(t => t.Luftfuktighet),
+                    Mogelrisk = (g.Average(t => t.Temp) * g.Average(t => t.Luftfuktighet)) / 100
+                })
+                .OrderBy(x => x.Mogelrisk) // Sortera efter minst till störst risk för mögel
+                .ToList<object>();
+        }
+
+// Användningsexempel i Program.cs
+// Console.WriteLine("\nSortering av dagar från minst till störst risk för mögel (Utomhus):");
+// var moldSorted = dataAccess.SorteraAllaDagarMogelrisk("Utomhus");
+// foreach (dynamic day in moldSorted.Take(5))
+// {
+//     Console.WriteLine($"{day.Datum:yyyy-MM-dd}: Mogelrisk: {day.Mogelrisk:F2}");
+// }
+
+
+public void LäsInCsvOchSpara(string filePath)
+  {
             var rows = File.ReadLines(filePath)
                            .Skip(1)  // Skippa headern
                            .Select(line => line.Split(','))
